@@ -8,7 +8,7 @@
     "serve": "bun run src/serve.ts"
   },
   "dependencies": {
-    "@buenojs/bueno": "../bueno"
+    "@buenojs/bueno": "^0.8.8"
   },
   "devDependencies": {
     "@types/bun": "latest",
