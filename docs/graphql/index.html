@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GraphQL | Bueno</title>
+<meta name="description" content="Add a GraphQL endpoint to your Bueno application with schema definition, resolvers, and subscriptions." />
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#2badee",
+        "accent-violet": "#8b5cf6",
+        "background-light": "#f6f7f8",
+        "background-dark": "#0f172a",
+      },
+      fontFamily: {
+        "display": ["Inter", "sans-serif"],
+        "mono": ["JetBrains Mono", "monospace"],
+      },
+      borderRadius: {
+        DEFAULT: "0.25rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        full: "9999px",
+      },
+    },
+  },
+};</script>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/styles/extra.css" />
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  body { font-family: 'Inter', sans-serif; }
+  .bg-grid {
+    background-image: radial-gradient(circle at 2px 2px, rgba(43, 173, 238, 0.05) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style></head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen selection:bg-primary/30">
+  
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md">
+  <div class="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-8">
+      <a class="flex items-center group" href="/">
+        <div class="size-8 flex items-center justify-center">
+          <svg class="size-8" fill="none" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <path d="M30 20V80L70 55L50 45L75 20H30Z" fill="#2badee"/>
+            <path d="M30 20L20 30V70L30 80" stroke="#2badee" stroke-linecap="round" stroke-width="2"/>
+          </svg>
+        </div>
+        <span class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white italic">bueno</span>
+      </a>
+      <nav class="hidden lg:flex items-center gap-6">
+        <a class="text-sm font-medium text-primary transition-colors" href="/docs">Documentation</a>
+        <a class="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors" href="https://github.com/buenojs/bueno" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-4">
+        <a class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" href="https://github.com/buenojs/bueno" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+          <svg class="size-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        </a>
+        <button id="theme-toggle" class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" aria-label="Toggle theme">
+          <span class="material-symbols-outlined theme-icon-dark hidden">dark_mode</span>
+          <span class="material-symbols-outlined theme-icon-light">light_mode</span>
+        </button>
+      </div>
+      <button class="md:hidden p-2 text-slate-500" id="mobile-menu-btn" aria-label="Open menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+    </div>
+  </div>
+</header>
+<script>
+  (function() {
+    var toggle = document.getElementById('theme-toggle');
+    var html = document.documentElement;
+    var darkIcon = document.querySelector('.theme-icon-dark');
+    var lightIcon = document.querySelector('.theme-icon-light');
+
+    function applyTheme(dark) {
+      if (dark) {
+        html.classList.add('dark');
+        darkIcon.classList.remove('hidden');
+        lightIcon.classList.add('hidden');
+      } else {
+        html.classList.remove('dark');
+        darkIcon.classList.add('hidden');
+        lightIcon.classList.remove('hidden');
+      }
+    }
+
+    var saved = localStorage.getItem('theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(saved ? saved === 'dark' : prefersDark);
+
+    if (toggle) {
+      toggle.addEventListener('click', function() {
+        var isDark = html.classList.contains('dark');
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        applyTheme(!isDark);
+      });
+    }
+  })();
+</script>
+  <div class="max-w-[1440px] mx-auto flex">
+    
+<aside class="hidden lg:block w-72 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto border-r border-slate-200 dark:border-slate-800 p-8">
+  <nav class="space-y-8">
+    
+      <div>
+        <h5 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Getting Started</h5>
+        <ul class="space-y-2 border-l border-slate-200 dark:border-slate-800">
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs">Introduction</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/getting-started">Getting Started</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Core</h5>
+        <ul class="space-y-2 border-l border-slate-200 dark:border-slate-800">
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/router">Router</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/context">Context</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/middleware">Middleware</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/validation">Validation</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/modules">Modules</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Data</h5>
+        <ul class="space-y-2 border-l border-slate-200 dark:border-slate-800">
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/database">Database</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/orm">ORM</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Frontend</h5>
+        <ul class="space-y-2 border-l border-slate-200 dark:border-slate-800">
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/frontend">Frontend</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/ssg">SSG</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/templates">Templates</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h5 class="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-200 uppercase tracking-wider">Infrastructure</h5>
+        <ul class="space-y-2 border-l border-slate-200 dark:border-slate-800">
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/security">Security</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/jobs">Jobs</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/websocket">WebSocket</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/i18n">i18n</a></li>
+          <li><a class="block pl-4 py-1 text-sm font-semibold text-accent-violet border-l -ml-px border-accent-violet" href="/docs/graphql">GraphQL</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/rpc">RPC</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/cache">Cache</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/storage">Storage</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/openapi">OpenAPI</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/logger">Logger</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/notifications">Notifications</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/config">Config</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/health">Health</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/testing">Testing</a></li>
+          <li><a class="block pl-4 py-1 text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors border-l -ml-px border-transparent" href="/docs/cli">CLI</a></li>
+        </ul>
+      </div>
+  </nav>
+</aside>
+    <!-- Main content -->
+    <main class="flex-1 min-w-0 py-12 px-6 lg:px-16 xl:px-24">
+      <div class="max-w-4xl mx-auto">
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-8 uppercase tracking-widest">
+          <a class="hover:text-primary transition-colors" href="/docs">Docs</a>
+                 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">Graphql</span>
+        </nav>
+        <article class="prose-bueno">
+          <h1 class="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">GraphQL</h1>
+          <p>Bueno's GraphQL module integrates a GraphQL server into your application, supporting queries, mutations, subscriptions, and schema-first or code-first approaches.
+
+<h2 id="basic-setup">Basic setup</h2>
+
+<pre><code class="language-typescript">import { createGraphQL } from '@buenojs/bueno/graphql';
+
+const graphql = createGraphQL({
+  schema: `
+    type Query {
+      hello: String
+      user(id: ID!): User
+    }
+
+    type User {
+      id: ID!
+      name: String!
+      email: String!
+    }
+  `,
+  resolvers: {
+    Query: {
+      hello: () =&gt; 'Hello from Bueno!',
+      user: async (_, { id }) =&gt; {
+        return await db.query('SELECT * FROM users WHERE id = $1', [id]);
+      },
+    },
+  },
+});
+
+app.use('/graphql', graphql.handler());</code></pre>
+
+<h2 id="schema-definition">Schema definition</h2>
+
+<pre><code class="language-graphql">type Query {
+  posts(page: Int, limit: Int): PostPage!
+  post(id: ID!): Post
+}
+
+type Mutation {
+  createPost(input: CreatePostInput!): Post!
+  updatePost(id: ID!, input: UpdatePostInput!): Post!
+  deletePost(id: ID!): Boolean!
+}
+
+type Subscription {
+  postCreated: Post!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+  createdAt: String!
+}
+
+input CreatePostInput {
+  title: String!
+  content: String!
+}</code></pre>
+
+<h2 id="resolvers">Resolvers</h2>
+
+<pre><code class="language-typescript">const resolvers = {
+  Query: {
+    posts: async (_, { page = 1, limit = 20 }) =&gt; {
+      const offset = (page - 1) * limit;
+      const posts = await db.query(
+        'SELECT * FROM posts ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+        [limit, offset]
+      );
+      return { items: posts, page, total: posts.length };
+    },
+  },
+  Mutation: {
+    createPost: async (_, { input }, ctx) =&gt; {
+      const user = ctx.get('jwtPayload');
+      if (!user) throw new Error('Unauthorized');
+      const [post] = await db.query(
+        'INSERT INTO posts (title, content, user_id) VALUES ($1, $2, $3) RETURNING *',
+        [input.title, input.content, user.userId]
+      );
+      return post;
+    },
+  },
+  Post: {
+    author: async (post) =&gt; {
+      return await db.query('SELECT * FROM users WHERE id = $1', [post.user_id]);
+    },
+  },
+};</code></pre>
+
+<h2 id="context">Context</h2>
+
+The GraphQL context receives the Bueno <code>Context</code> object, giving resolvers access to the request:
+
+<pre><code class="language-typescript">const graphql = createGraphQL({
+  schema,
+  resolvers,
+  context: (ctx) =&gt; ({
+    user: ctx.get('jwtPayload'),
+    db,
+    loaders: createDataLoaders(),
+  }),
+});</code></pre>
+
+<h2 id="subscriptions">Subscriptions</h2>
+
+WebSocket-based subscriptions:
+
+<pre><code class="language-typescript">const graphql = createGraphQL({
+  schema,
+  resolvers: {
+    Subscription: {
+      postCreated: {
+        subscribe: () =&gt; pubsub.asyncIterator('POST_CREATED'),
+      },
+    },
+    Mutation: {
+      createPost: async (_, { input }) =&gt; {
+        const post = await createPost(input);
+        pubsub.publish('POST_CREATED', { postCreated: post });
+        return post;
+      },
+    },
+  },
+  subscriptions: { path: '/graphql/ws' },
+});</code></pre>
+
+<h2 id="graphql-playground">GraphQL Playground</h2>
+
+Enable the built-in playground in development:
+
+<pre><code class="language-typescript">const graphql = createGraphQL({
+  schema,
+  resolvers,
+  playground: process.env.NODE_ENV === 'development',
+});</code></pre>
+
+Access it at <code>/graphql</code> in a browser.</p>
+        </article>
+        
+<div class="grid md:grid-cols-2 gap-4 mt-16 pt-8 border-t border-slate-200 dark:border-slate-800">
+  <a class="group p-6 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary transition-all flex flex-col gap-2 bg-slate-50 dark:bg-slate-900/50" href="/docs/i18n">
+      <span class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">arrow_back</span> Previous
+      </span>
+      <span class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary">i18n</span>
+    </a>
+  <a class="group p-6 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary transition-all flex flex-col items-end gap-2 bg-slate-50 dark:bg-slate-900/50" href="/docs/rpc">
+      <span class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+        Next <span class="material-symbols-outlined text-sm">arrow_forward</span>
+      </span>
+      <span class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary">RPC</span>
+    </a>
+</div>
+        <footer class="mt-20 py-8 text-center border-t border-slate-200 dark:border-slate-800">
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Released under the MIT License. Built with love by the Bueno Community.
+          </p>
+        </footer>
+      </div>
+    </main>
+    <!-- Right TOC -->
+    <aside class="hidden xl:block w-64 h-[calc(100vh-4rem)] sticky top-16 p-8">
+      <h5 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider">On this page</h5>
+          <ul class="space-y-3 text-sm">
+            <li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#basic-setup">Basic setup</a></li>
+<li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#schema-definition">Schema definition</a></li>
+<li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#resolvers">Resolvers</a></li>
+<li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#context">Context</a></li>
+<li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#subscriptions">Subscriptions</a></li>
+<li style="padding-left:0px"><a class="text-slate-500 hover:text-primary transition-colors" href="#graphql-playground">GraphQL Playground</a></li>
+          </ul>
+    </aside>
+  </div>
+  <!-- Mobile nav FAB -->
+  <button class="fixed bottom-6 right-6 lg:hidden size-14 bg-primary text-background-dark rounded-full shadow-lg flex items-center justify-center z-[60]" aria-label="Open menu">
+    <span class="material-symbols-outlined">menu</span>
+  </button>
+</body>
+</html>
